@@ -1,22 +1,16 @@
-const mongoose = require('mongoose');
 import express from 'express';
+const mongoose = require('mongoose');
+const mongoConnect = require('./mongoConnect')
+
 const app = express()
 const port = 3000
 const clientdir = __dirname.substr(0, __dirname.length - 4) + "/client"
-
-mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true });
-
-const db = mongoose.connection;
+mongoConnect.connect("test")
 
 const personSchema = new mongoose.Schema({
     name: String,
     email: String
 })
-
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function () {
-    console.log("Connected")
-});
 
 app.use(express.urlencoded({
     limit: "5000mb",
@@ -26,6 +20,13 @@ app.use(express.urlencoded({
 
 const person = mongoose.model('person', personSchema)
 
+function createEntry(name: any, email: any){
+    let entry = new person({
+        name: name, 
+        email: email
+       })
+       return entry
+}
 
 app.get('/', (req, res) => res.sendFile(clientdir + "/index.html"))
 app.get('/style', (req, res) => res.sendFile(clientdir + "/style.css"))
@@ -35,12 +36,9 @@ app.post('/', function (req, res) {
     console.log(req.body.name + "\n" + req.body.email)
     res.send("<meta http-equiv=\"Refresh\" content=\"0; url='/'\" />")
 
-    const user = new person({ name: req.body.name, email: req.body.email})
-    
+    const user: any = new person({ })
 
-    user.save(function (err: Error, person: any) {
-        if (err) return console.error(err);
-    });
+    mongoConnect.saveDoc(createEntry(req.body.name, req.body.email))
 })
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
